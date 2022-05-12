@@ -2,33 +2,29 @@
 // The port number is passed as an argument
 // To compile: gcc server.c -o server
 // Reference: Beej's networking guide, man pages
-
-#define _POSIX_C_SOURCE 200112L
-#include <netdb.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include "server.h"
 
 int main(int argc, char** argv) {
 	int sockfd, newsockfd, n, re, s;
-	char buffer[256];
+	char buffer[REQUEST_MAX_BUFFER_SIZE];
 	struct addrinfo hints, *res;
 	struct sockaddr_storage client_addr;
 	socklen_t client_addr_size;
 
-	if (argc < 2) {
+	if (argc < 4) {
 		fprintf(stderr, "ERROR, no port provided\n");
 		exit(EXIT_FAILURE);
 	}
+
+    char *web_path_root = argv[3];
 
 	// Create address we're going to listen on (with given port number)
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_INET;       // IPv4
 	hints.ai_socktype = SOCK_STREAM; // TCP
 	hints.ai_flags = AI_PASSIVE;     // for bind, listen, accept
-	// node (NULL means any interface), service (port), hints, res
-	s = getaddrinfo(NULL, argv[1], &hints, &res);
+	// node (NULL means any interface), service (port), hints, res. Note: argv[2] is the port_number
+	s = getaddrinfo(NULL, argv[2], &hints, &res);
 	if (s != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
 		exit(EXIT_FAILURE);
@@ -72,7 +68,7 @@ int main(int argc, char** argv) {
 	}
 
 	// Read characters from the connection, then process
-	n = read(newsockfd, buffer, 255); // n is number of characters read
+	n = read(newsockfd, buffer, REQUEST_MAX_BUFFER_SIZE); // n is number of characters read
 	if (n < 0) {
 		perror("read");
 		exit(EXIT_FAILURE);
@@ -80,8 +76,12 @@ int main(int argc, char** argv) {
 	// Null-terminate string
 	buffer[n] = '\0';
 
+    char *file_path;
+    get_file_path(&file_path, web_path_root, buffer);
+    printf("%s\n", file_path);
+
 	// Write message back
-	printf("Here is the message: %s\n", buffer);
+	// printf("Here is the message: %s\n", buffer);
 	n = write(newsockfd, "I got your message", 18);
 	if (n < 0) {
 		perror("write");
@@ -91,4 +91,33 @@ int main(int argc, char** argv) {
 	close(sockfd);
 	close(newsockfd);
 	return 0;
+}
+
+char *parse_request_path(char *request_buffer) {
+    // Get the request line from the buffer.
+    char *request_line = strtok(request_buffer, "\r\n");
+    printf("request line: %s\n", request_line);
+
+    // Consume the GET which is the first token of strtok
+    strtok(request_line, " ");
+
+    // Call strtok again using NULL as first argument to get the second token which is the file from the request and
+    // return it.
+    return strtok(NULL, " ");
+}
+
+void get_file_path(char **file_path, char *web_path_root, char *request_buffer) {
+    char *request_path = parse_request_path(request_buffer);
+    int file_path_length = strlen(web_path_root) + strlen(request_path) + NULL_TERMINATOR_SPACE;
+
+
+    *file_path = (char *) malloc (file_path_length * sizeof(char));
+
+    /* Concatenate both the web_path_root and request_path into a new string variable. I was looking for a way
+       concatenate them into a new string variable instead of just concatenating request_path to web_path_root and
+       came across this code https://stackoverflow.com/questions/8465006/how-do-i-concatenate-two-strings-in-c
+       and used it as reference. While the rest of the code is fairly similar, I wrote it before coming across the
+       post. */
+    strcpy(*file_path, web_path_root);
+    strcat(*file_path, request_path);
 }
