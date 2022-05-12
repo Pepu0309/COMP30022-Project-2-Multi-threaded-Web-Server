@@ -93,6 +93,23 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
+void *compose_http_response(char *file_path) {
+    FILE *fp_file_path;
+    FILE *fp_response_file;
+
+    // Write the HTTP response contents to a file called response.txt. Opening a file that does not exist in write mode
+    // will create a new file.
+    fp_response_file = fopen("response.txt", "w");
+    assert(fp_response_file != NULL);
+
+    // If the file we're trying to read from exists, then it's a valid HTTP request.
+    if((fp_file_path = fopen(file_path, "r") != NULL) {
+        fprintf(fp_response_file, "HTTP/1.0 %s OK", SUCCESS);
+    } else {
+        fprintf(fp_response_file, "HTTP/1.0 %s OK", PAGE_NOT_FOUND);
+    }
+}
+
 char *parse_request_path(char *request_buffer) {
     // Get the request line from the buffer.
     char *request_line = strtok(request_buffer, "\r\n");

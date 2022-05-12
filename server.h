@@ -12,10 +12,15 @@
 #include <string.h>
 #include <unistd.h>
 #include <string.h>
+#include <assert.h>
 
 #define REQUEST_MAX_BUFFER_SIZE 2000
 #define INITIAL_STRING_SPACE 20
+
 #define NULL_TERMINATOR_SPACE 1
+
+#define SUCCESS "200"
+#define PAGE_NOT_FOUND "404"
 
 char *parse_request_path(char *request_line);
 
