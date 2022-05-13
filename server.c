@@ -115,8 +115,9 @@ void send_http_response(int sockfd_to_send, char *file_path) {
     struct stat file_stat;
 
     // If the file we're trying to read from does not exist, open will return -1 as per the linux manual located at
-    // https://man7.org/linux/man-pages/man2/open.2.html.
-    if((file_path_fd = open(file_path, O_RDONLY)) < 0) {
+    // https://man7.org/linux/man-pages/man2/open.2.html. Hence, if we cannot open what is located at the file path
+    // or we find a "../" defined as the constant ESCAPE_PATH in the file_path, then we return a 404.
+    if((file_path_fd = open(file_path, O_RDONLY)) < 0 || (strstr(file_path, ESCAPE_PATH) != NULL)) {
         write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n");
     // Otherwise, the file exists
     } else {

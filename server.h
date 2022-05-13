@@ -33,6 +33,8 @@
 #define CSS_EXTENSION ".css"
 #define JAVA_SCRIPT_EXTENSION ".js"
 
+#define ESCAPE_PATH "../"
+
 #define SUCCESS "200 OK"
 #define PAGE_NOT_FOUND "404 NOT FOUND"
 
