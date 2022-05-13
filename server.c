@@ -100,7 +100,7 @@ void write_message(int sockfd_to_send, char *message) {
 
 void send_http_response(int sockfd_to_send, char *file_path) {
     int file_path_fd;
-    FILE *file_path_ptr;
+
     // stat struct from standard library which will allow access to the file size
     struct stat file_stat;
 
@@ -112,7 +112,7 @@ void send_http_response(int sockfd_to_send, char *file_path) {
         write_message(sockfd_to_send, "HTTP/1.0 404 NOT FOUND");
     // Otherwise, the file exists, and we form an HTTP 200 response.
     } else {
-        write_message(sockfd_to_send, "HTTP/1.0 200 OK");
+        write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n");
         /* Call fstat on file_path to get the statistics of the file located at file_path and then store it in the
            stat struct file_stat declared earlier. */
         fstat(file_path_fd, &file_stat);
