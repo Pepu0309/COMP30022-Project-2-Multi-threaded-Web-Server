@@ -12,15 +12,24 @@
 #include <string.h>
 #include <unistd.h>
 #include <string.h>
+
 #include <assert.h>
+
+#include <sys/sendfile.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define REQUEST_MAX_BUFFER_SIZE 2000
 #define INITIAL_STRING_SPACE 20
 
 #define NULL_TERMINATOR_SPACE 1
 
-#define SUCCESS "200"
-#define PAGE_NOT_FOUND "404"
+#define SUCCESS "200 OK"
+#define PAGE_NOT_FOUND "404 NOT FOUND"
+
+void write_message(int socket, char *message);
+
+void send_http_response(int socket, char *file_path);
 
 char *parse_request_path(char *request_line);
 

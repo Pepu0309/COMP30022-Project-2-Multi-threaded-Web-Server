@@ -78,42 +78,51 @@ int main(int argc, char** argv) {
 
     char *file_path;
     get_file_path(&file_path, web_path_root, buffer);
-    printf("%s\n", file_path);
 
-	// Write message back
-	// printf("Here is the message: %s\n", buffer);
-	n = write(newsockfd, "I got your message", 18);
-	if (n < 0) {
-		perror("write");
-		exit(EXIT_FAILURE);
-	}
+    send_http_response(newsockfd, file_path);
 
 	close(sockfd);
 	close(newsockfd);
 	return 0;
 }
 
-void *compose_http_response(char *file_path) {
-    FILE *fp_file_path;
-    FILE *fp_response_file;
+void write_message(int sockfd_to_send, char *message) {
+    // Write message back
+    // printf("Here is the message: %s\n", buffer);
+    printf("%s\n", message);
+    printf("%ld\n", strlen(message));
+    int n = write(sockfd_to_send, message, strlen(message));
+    if (n < 0) {
+        perror("write");
+        exit(EXIT_FAILURE);
+    }
+}
 
-    // Write the HTTP response contents to a file called response.txt. Opening a file that does not exist in write mode
-    // will create a new file.
-    fp_response_file = fopen("response.txt", "w");
-    assert(fp_response_file != NULL);
+void send_http_response(int sockfd_to_send, char *file_path) {
+    int file_path_fd;
+    FILE *file_path_ptr;
+    // stat struct from standard library which will allow access to the file size
+    struct stat file_stat;
 
-    // If the file we're trying to read from exists, then it's a valid HTTP request.
-    if((fp_file_path = fopen(file_path, "r") != NULL) {
-        fprintf(fp_response_file, "HTTP/1.0 %s OK", SUCCESS);
+    printf("%s\n", file_path);
+
+    // If the file we're trying to read from does not exist, open will return -1 as per the linux manual located at
+    // https://man7.org/linux/man-pages/man2/open.2.html#RETURN_VALUE.
+    if((file_path_fd = open(file_path, O_RDONLY)) < 0) {
+        write_message(sockfd_to_send, "HTTP/1.0 404 NOT FOUND");
+    // Otherwise, the file exists, and we form an HTTP 200 response.
     } else {
-        fprintf(fp_response_file, "HTTP/1.0 %s OK", PAGE_NOT_FOUND);
+        write_message(sockfd_to_send, "HTTP/1.0 200 OK");
+        /* Call fstat on file_path to get the statistics of the file located at file_path and then store it in the
+           stat struct file_stat declared earlier. */
+        fstat(file_path_fd, &file_stat);
+        sendfile(sockfd_to_send, file_path_fd, NULL, file_stat.st_size);
     }
 }
 
 char *parse_request_path(char *request_buffer) {
     // Get the request line from the buffer.
     char *request_line = strtok(request_buffer, "\r\n");
-    printf("request line: %s\n", request_line);
 
     // Consume the GET which is the first token of strtok
     strtok(request_line, " ");
@@ -127,14 +136,17 @@ void get_file_path(char **file_path, char *web_path_root, char *request_buffer) 
     char *request_path = parse_request_path(request_buffer);
     int file_path_length = strlen(web_path_root) + strlen(request_path) + NULL_TERMINATOR_SPACE;
 
-
     *file_path = (char *) malloc (file_path_length * sizeof(char));
 
     /* Concatenate both the web_path_root and request_path into a new string variable. I was looking for a way
-       concatenate them into a new string variable instead of just concatenating request_path to web_path_root and
-       came across this code https://stackoverflow.com/questions/8465006/how-do-i-concatenate-two-strings-in-c
+       concatenate them into a new string variable with enough space instead of just concatenating request_path to
+       web_path_root and came across this code from a stackoverflow post.
+       https://stackoverflow.com/questions/8465006/how-do-i-concatenate-two-strings-in-c
        and used it as reference. While the rest of the code is fairly similar, I wrote it before coming across the
        post. */
+
+    /* Copy web_path_root to file_path first since it has enough space to store both strings. */
     strcpy(*file_path, web_path_root);
+    /* Then concatenate the request_path to file_path which should already contain web_path_root. */
     strcat(*file_path, request_path);
 }
