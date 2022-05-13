@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 	}
 	freeaddrinfo(res);
 
-    while(BOOL_TRUE) {
+    while(true) {
         // Listen on socket - means we're ready to accept connections,
         // incoming connection requests will be queued, man 3 listen
         if (listen(sockfd, 5) < 0) {
@@ -87,6 +87,7 @@ int main(int argc, char** argv) {
 
         char *file_path;
         get_file_path(&file_path, web_path_root, buffer);
+        printf("%s", file_path);
 
         send_http_response(newsockfd, file_path);
 
@@ -117,9 +118,9 @@ void send_http_response(int sockfd_to_send, char *file_path) {
     // If the file we're trying to read from does not exist, open will return -1 as per the linux manual located at
     // https://man7.org/linux/man-pages/man2/open.2.html. Hence, if we cannot open what is located at the file path
     // or we find a "../" defined as the constant ESCAPE_PATH in the file_path, then we return a 404.
-    if((file_path_fd = open(file_path, O_RDONLY)) < 0 || (strstr(file_path, ESCAPE_PATH) != NULL)) {
+    if((file_path_fd = open(file_path, O_RDONLY)) < 0 || strstr(file_path, "/../") != NULL) {
         write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n");
-    // Otherwise, the file exists
+    // Otherwise, the file exists, and we can use fstat to get the statistics of it.
     } else {
         /* Call fstat on file_path to get the statistics of the file located at file_path and then store it in the
            stat struct file_stat declared earlier. */
@@ -170,7 +171,7 @@ char *parse_request_path(char *request_buffer) {
 
 void get_file_path(char **file_path, char *web_path_root, char *request_buffer) {
     char *request_path = parse_request_path(request_buffer);
-    int file_path_length = strlen(web_path_root) + strlen(request_path) + NULL_TERMINATOR_SPACE;
+    size_t file_path_length = strlen(web_path_root) + strlen(request_path) + NULL_TERMINATOR_SPACE;
 
     *file_path = (char *) malloc (file_path_length * sizeof(char));
 

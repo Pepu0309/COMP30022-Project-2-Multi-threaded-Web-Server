@@ -25,15 +25,13 @@
 #define INITIAL_STRING_SPACE 20
 
 #define NULL_TERMINATOR_SPACE 1
-#define BOOL_TRUE 1
+#define ZERO_OFFSET 1
 
 #define FILE_EXTENSION_DELIMITER '.'
 #define HTML_EXTENSION ".html"
 #define JPEG_EXTENSION ".jpg"
 #define CSS_EXTENSION ".css"
 #define JAVA_SCRIPT_EXTENSION ".js"
-
-#define ESCAPE_PATH "../"
 
 #define SUCCESS "200 OK"
 #define PAGE_NOT_FOUND "404 NOT FOUND"
