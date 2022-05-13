@@ -100,7 +100,7 @@ void write_message(int sockfd_to_send, char *message) {
 
 void send_http_response(int sockfd_to_send, char *file_path) {
     int file_path_fd;
-
+    long int num_bytes_sent = 0;
     // stat struct from standard library which will allow access to the file size
     struct stat file_stat;
 
@@ -109,14 +109,20 @@ void send_http_response(int sockfd_to_send, char *file_path) {
     // If the file we're trying to read from does not exist, open will return -1 as per the linux manual located at
     // https://man7.org/linux/man-pages/man2/open.2.html#RETURN_VALUE.
     if((file_path_fd = open(file_path, O_RDONLY)) < 0) {
-        write_message(sockfd_to_send, "HTTP/1.0 404 NOT FOUND");
+        write_message(sockfd_to_send, "HTTP/1.0 404 NOT FOUND\r\n");
     // Otherwise, the file exists, and we form an HTTP 200 response.
     } else {
         write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n");
         /* Call fstat on file_path to get the statistics of the file located at file_path and then store it in the
            stat struct file_stat declared earlier. */
         fstat(file_path_fd, &file_stat);
-        sendfile(sockfd_to_send, file_path_fd, NULL, file_stat.st_size);
+
+        int file_to_send_size = file_stat.st_size;
+        while(num_bytes_sent < file_to_send_size) {
+            num_bytes_sent += sendfile(sockfd_to_send, file_path_fd, &num_bytes_sent, file_to_send_size);
+        }
+
+
     }
 }
 
