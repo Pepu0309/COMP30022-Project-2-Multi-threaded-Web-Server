@@ -119,7 +119,10 @@ void send_http_response(int sockfd_to_send, char *file_path) {
         write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n");
     // Otherwise, the file exists, and we form an HTTP 200 response.
     } else {
-        write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n\r\n");
+        write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n");
+        write_message(sockfd_to_send, "Content-Type: ");
+        write_content_type(sockfd_to_send, file_path);
+        write_message(sockfd_to_send, "\r\n\r\n");
 
         /* Call fstat on file_path to get the statistics of the file located at file_path and then store it in the
            stat struct file_stat declared earlier. */
@@ -172,4 +175,22 @@ void get_file_path(char **file_path, char *web_path_root, char *request_buffer) 
     strcpy(*file_path, web_path_root);
     /* Then concatenate the request_path to file_path which should already contain web_path_root. */
     strcat(*file_path, request_path);
+}
+
+void write_content_type(int sockfd_to_send, char *file_path) {
+    char *extension;
+
+    extension = strrchr(file_path, FILE_EXTENSION_DELIMITER);
+
+    if(strcmp(extension, HTML_EXTENSION) == 0) {
+        write_message(sockfd_to_send, "text/html");
+    } else if (strcmp(extension, JPEG_EXTENSION) == 0) {
+        write_message(sockfd_to_send, "image/jpeg");
+    } else if (strcmp(extension, JAVA_SCRIPT_EXTENSION) == 0) {
+        write_message(sockfd_to_send, "text/javascript");
+    } else if (strcmp(extension, CSS_EXTENSION) == 0) {
+        write_message(sockfd_to_send, "text/css");
+    } else {
+        write_message(sockfd_to_send, "application/octet-stream");
+    }
 }

@@ -26,6 +26,12 @@
 #define NULL_TERMINATOR_SPACE 1
 #define BOOL_TRUE 1
 
+#define FILE_EXTENSION_DELIMITER '.'
+#define HTML_EXTENSION ".html"
+#define JPEG_EXTENSION ".jpg"
+#define CSS_EXTENSION ".css"
+#define JAVA_SCRIPT_EXTENSION ".js"
+
 #define SUCCESS "200 OK"
 #define PAGE_NOT_FOUND "404 NOT FOUND"
 
@@ -36,5 +42,7 @@ void send_http_response(int socket, char *file_path);
 char *parse_request_path(char *request_line);
 
 void get_file_path(char **file_path, char *web_path_root, char *request_buffer);
+
+void write_content_type(int sockfd_to_send, char *file_path);
 
 #endif //COMP30023_2022_PROJECT_2_SERVER_H
