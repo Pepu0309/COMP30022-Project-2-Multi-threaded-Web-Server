@@ -89,16 +89,17 @@ int main(int argc, char** argv) {
         get_file_path(&file_path, web_path_root, buffer);
 
         send_http_response(newsockfd, file_path);
-    }
 
-	close(sockfd);
-	close(newsockfd);
+        close(newsockfd);
+    }
+    close(sockfd);
 	return 0;
 }
 
 void write_message(int sockfd_to_send, char *message) {
     // Write message back
     // printf("Here is the message: %s\n", buffer);
+    printf("Writing message");
     int n = write(sockfd_to_send, message, strlen(message));
     if (n < 0) {
         perror("write");
