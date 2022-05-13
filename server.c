@@ -90,6 +90,7 @@ int main(int argc, char** argv) {
 
         send_http_response(newsockfd, file_path);
 
+        free(file_path);
         close(newsockfd);
     }
     close(sockfd);
@@ -182,14 +183,24 @@ void write_content_type(int sockfd_to_send, char *file_path) {
 
     extension = strrchr(file_path, FILE_EXTENSION_DELIMITER);
 
-    if(strcmp(extension, HTML_EXTENSION) == 0) {
-        write_message(sockfd_to_send, "text/html");
-    } else if (strcmp(extension, JPEG_EXTENSION) == 0) {
-        write_message(sockfd_to_send, "image/jpeg");
-    } else if (strcmp(extension, JAVA_SCRIPT_EXTENSION) == 0) {
-        write_message(sockfd_to_send, "text/javascript");
-    } else if (strcmp(extension, CSS_EXTENSION) == 0) {
-        write_message(sockfd_to_send, "text/css");
+    // If there is a '.' character found in the file_path
+    if(extension != NULL) {
+        // Among the four MIME content type the server identifies, if any of them are found, then return the MIME
+        // content type as specified by https://mimetype.io/all-types/.
+        if(strcmp(extension, HTML_EXTENSION) == 0) {
+            write_message(sockfd_to_send, "text/html");
+        } else if (strcmp(extension, JPEG_EXTENSION) == 0) {
+            write_message(sockfd_to_send, "image/jpeg");
+        } else if (strcmp(extension, JAVA_SCRIPT_EXTENSION) == 0) {
+            write_message(sockfd_to_send, "text/javascript");
+        } else if (strcmp(extension, CSS_EXTENSION) == 0) {
+            write_message(sockfd_to_send, "text/css");
+        // If there is a '.' character found in the file path, but it's either a file extension not part of the four
+        // or part of something else in the file path which is not a file extension (which we don't care about).
+        } else {
+            write_message(sockfd_to_send, "application/octet-stream");
+        }
+    // If there is no '.' character found which means no file extension.
     } else {
         write_message(sockfd_to_send, "application/octet-stream");
     }
