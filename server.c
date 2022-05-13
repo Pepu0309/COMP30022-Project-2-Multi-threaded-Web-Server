@@ -118,31 +118,39 @@ void send_http_response(int sockfd_to_send, char *file_path) {
     // https://man7.org/linux/man-pages/man2/open.2.html.
     if((file_path_fd = open(file_path, O_RDONLY)) < 0) {
         write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n");
-    // Otherwise, the file exists, and we form an HTTP 200 response.
+    // Otherwise, the file exists
     } else {
-        write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n");
-        write_message(sockfd_to_send, "Content-Type: ");
-        write_content_type(sockfd_to_send, file_path);
-        write_message(sockfd_to_send, "\r\n\r\n");
-
         /* Call fstat on file_path to get the statistics of the file located at file_path and then store it in the
            stat struct file_stat declared earlier. */
         fstat(file_path_fd, &file_stat);
 
-        off_t file_to_send_size = file_stat.st_size;
-        off_t total_num_bytes_sent = 0;
-        off_t bytes_successfully_sent = 0;
+        // Test that the file_path leads to a regular file and not something else like a directory.
+        if(S_ISREG(file_stat.st_mode)) {
+            write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n");
+            write_message(sockfd_to_send, "Content-Type: ");
+            write_content_type(sockfd_to_send, file_path);
+            write_message(sockfd_to_send, "\r\n\r\n");
 
-        // Track the bytes sent by sendfile() and make sure that all bytes are sent.
-        while(total_num_bytes_sent < file_to_send_size) {
-            // sendfile returns -1 in the case of an error or the number of bytes successfully sent as per the linux
-            // manual located at https://man7.org/linux/man-pages/man2/sendfile.2.html.
-            bytes_successfully_sent = sendfile(sockfd_to_send, file_path_fd, &total_num_bytes_sent, file_to_send_size);
-            // If there was no error, then we increment the total number of bytes sent.
-            if(bytes_successfully_sent >= 0) {
-                total_num_bytes_sent += bytes_successfully_sent;
+            off_t file_to_send_size = file_stat.st_size;
+            off_t total_num_bytes_sent = 0;
+            off_t bytes_successfully_sent = 0;
+
+            // Track the bytes sent by sendfile() and make sure that all bytes are sent.
+            while(total_num_bytes_sent < file_to_send_size) {
+                // sendfile returns -1 in the case of an error or the number of bytes successfully sent as per the
+                // linux manual located at https://man7.org/linux/man-pages/man2/sendfile.2.html.
+                bytes_successfully_sent = sendfile(sockfd_to_send, file_path_fd,
+                                                   &total_num_bytes_sent, file_to_send_size);
+                // If there was no error, then we increment the total number of bytes sent.
+                if(bytes_successfully_sent >= 0) {
+                    total_num_bytes_sent += bytes_successfully_sent;
+                }
             }
+        // Otherwise, we send back a 404 not found response as well.
+        } else {
+            write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n");
         }
+
     }
 
 }
@@ -181,6 +189,9 @@ void get_file_path(char **file_path, char *web_path_root, char *request_buffer) 
 void write_content_type(int sockfd_to_send, char *file_path) {
     char *extension;
 
+    // Use strrchr to get the last occurrence of the FILE_EXTENSION_DELIMITER which is the '.' character. This deals
+    // with "false" extensions in the file_path. Handling '.' characters that are not associated with a file path when
+    // there is no extension is handled below.
     extension = strrchr(file_path, FILE_EXTENSION_DELIMITER);
 
     // If there is a '.' character found in the file_path
