@@ -57,24 +57,25 @@ int main(int argc, char** argv) {
 	}
 	freeaddrinfo(res);
 
-	// Listen on socket - means we're ready to accept connections,
-	// incoming connection requests will be queued, man 3 listen
-	if (listen(sockfd, 5) < 0) {
-		perror("listen");
-		exit(EXIT_FAILURE);
-	}
-
-	// Accept a connection - blocks until a connection is ready to be accepted
-	// Get back a new file descriptor to communicate on
-	client_addr_size = sizeof client_addr;
-	newsockfd =
-		accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
-	if (newsockfd < 0) {
-		perror("accept");
-		exit(EXIT_FAILURE);
-	}
-
     while(BOOL_TRUE) {
+        // Listen on socket - means we're ready to accept connections,
+        // incoming connection requests will be queued, man 3 listen
+        if (listen(sockfd, 5) < 0) {
+            perror("listen");
+            exit(EXIT_FAILURE);
+        }
+
+        // Accept a connection - blocks until a connection is ready to be accepted
+        // Get back a new file descriptor to communicate on
+        client_addr_size = sizeof client_addr;
+        newsockfd =
+            accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
+        if (newsockfd < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+
+
         // Read characters from the connection, then process
         n = read(newsockfd, buffer, REQUEST_MAX_BUFFER_SIZE); // n is number of characters read
         if (n < 0) {
@@ -111,22 +112,21 @@ void send_http_response(int sockfd_to_send, char *file_path) {
     // stat struct from standard library which will allow access to the file size
     struct stat file_stat;
 
-    printf("%s\n", file_path);
-
     // If the file we're trying to read from does not exist, open will return -1 as per the linux manual located at
     // https://man7.org/linux/man-pages/man2/open.2.html.
     if((file_path_fd = open(file_path, O_RDONLY)) < 0) {
-        write_message(sockfd_to_send, "HTTP/1.0 404 NOT FOUND\r\n");
+        write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n");
     // Otherwise, the file exists, and we form an HTTP 200 response.
     } else {
-        write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n");
+        write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n\r\n");
+
         /* Call fstat on file_path to get the statistics of the file located at file_path and then store it in the
            stat struct file_stat declared earlier. */
         fstat(file_path_fd, &file_stat);
 
-        int file_to_send_size = file_stat.st_size;
-        long int total_num_bytes_sent = 0;
-        long int bytes_successfully_sent = 0;
+        off_t file_to_send_size = file_stat.st_size;
+        off_t total_num_bytes_sent = 0;
+        off_t bytes_successfully_sent = 0;
 
         // Track the bytes sent by sendfile() and make sure that all bytes are sent.
         while(total_num_bytes_sent < file_to_send_size) {
@@ -139,6 +139,7 @@ void send_http_response(int sockfd_to_send, char *file_path) {
             }
         }
     }
+
 }
 
 char *parse_request_path(char *request_buffer) {

@@ -17,6 +17,7 @@
 
 #include <sys/sendfile.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <fcntl.h>
 
 #define REQUEST_MAX_BUFFER_SIZE 2000
