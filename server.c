@@ -216,8 +216,15 @@ bool parse_request_path(char *request_buffer, char **request_path) {
     // Get the request line from the buffer.
     char *request_line = strtok(request_buffer, "\r\n");
 
+    // If something has gone wrong with getting the request line, then we return false to indicate unsuccessful
+    // parsing of the request path as well.
+    if(request_line == NULL) {
+        return false;
+    }
+
     // Consume the GET which is the first token of strtok. If it's not GET then this function returns false
-    if(strcmp(strtok(request_line, " "), GET_REQUEST) != 0) {
+    char *HTTP_method = strtok(request_line, " ");
+    if(strcmp(HTTP_method, GET_REQUEST) != 0) {
         return false;
     }
 
@@ -227,7 +234,8 @@ bool parse_request_path(char *request_buffer, char **request_path) {
 
     // Call strtok once again to get the HTTP protocol version of the request. If it's not HTTP/1.0, then this
     // function returns false as well.
-    if(strcmp(strtok(NULL, " "), PROTOCOL_VER) != 0) {
+    char *req_protocol_version = strtok(NULL, " ");
+    if(strcmp(req_protocol_version, PROTOCOL_VER) != 0) {
         return false;
     }
 
