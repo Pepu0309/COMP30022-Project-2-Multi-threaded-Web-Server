@@ -2,12 +2,14 @@
 // The port number is passed as an argument
 // To compile: gcc server.c -o server
 // Reference: Beej's networking guide, man pages
+
+// The code in this project was built off of server.c provided as part of COMP30023 Week 9 Practical.
 #include "server.h"
 
 int main(int argc, char** argv) {
 	int sockfd, newsockfd, n, re, s;
 	char buffer[REQUEST_MAX_BUFFER_SIZE];
-	struct addrinfo hints, *res;
+	struct addrinfo hints, *res, *p;
 	struct sockaddr_storage client_addr;
 	socklen_t client_addr_size;
 
@@ -17,14 +19,17 @@ int main(int argc, char** argv) {
 	}
 
     char *web_path_root = argv[3];
+    bool mode_IPv6 = false;
 
 	// Create address we're going to listen on (with given port number)
 	memset(&hints, 0, sizeof hints);
 
-    if(strcmp(argv[2], IPV4_ARG) == 0) {
+    if(strcmp(argv[1], IPV4_ARG) == 0) {
         hints.ai_family = AF_INET; // IPv4
-    } else if (strcmp(argv[2], IPV6_ARG) == 0) {
+    } else if (strcmp(argv[1], IPV6_ARG) == 0) {
         hints.ai_family = AF_INET6; // IPv6
+        // Set the mode_IPv6 flag to be true so the program knows that it's using IPv6.
+        mode_IPv6 = true;
     }
 	hints.ai_socktype = SOCK_STREAM; // TCP
 	hints.ai_flags = AI_PASSIVE;     // for bind, listen, accept
@@ -35,13 +40,35 @@ int main(int argc, char** argv) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
 		exit(EXIT_FAILURE);
 	}
+    // The code used in the if statement was referenced and modified from COMP30023 Week 8 Lecture 2 Lecture Slide 13
+    // "Create IPv6 Socket". getaddrinfo returns multiple addresses in a linked list as mentioned in COMP30023
+    // Week 8 Lecture 2. Hence, if we want a IPv6 address, we need to use a for loop to step through the
+    // linked list returned (res) and find the IPv6 address.
+    if(mode_IPv6) {
+        for(p = res; p != NULL; p = p->ai_next) {
+            // Check if the address family of the address is IPv6. If it is then we proceed to try to create a socket
+            // using this address in the linked list.
+            if(p->ai_family == AF_INET6) {
+                // We attempt to create a socket from this address. If socket creation was successful, we can use
+                // this socket, so we break out of the loop. Otherwise, we keep trying with remaining IPv6 addresses.
+                if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) >= 0) {
+                    break;
+                }
+            }
+        }
+    // Otherwise, we don't care about IPv6 and create a socket as normal.
+    } else {
+        // Create socket
+        sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    }
 
-	// Create socket
-	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	if (sockfd < 0) {
-		perror("socket");
-		exit(EXIT_FAILURE);
-	}
+    // If no sockets were successfully created either from the loop to create an IPv6 socket or the socket call() from
+    // the else statement to create a normal IPv4 socket, then there was an error and the program exits with failure.
+    if (sockfd < 0) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+
 
 	// Reuse port if possible
 	re = 1;
