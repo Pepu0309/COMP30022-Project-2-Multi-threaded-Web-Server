@@ -18,15 +18,17 @@ int main(int argc, char** argv) {
 
     char *web_path_root = argv[3];
 
+	// Create address we're going to listen on (with given port number)
+	memset(&hints, 0, sizeof hints);
+
     if(strcmp(argv[2], IPV4_ARG) == 0) {
         hints.ai_family = AF_INET; // IPv4
     } else if (strcmp(argv[2], IPV6_ARG) == 0) {
         hints.ai_family = AF_INET6; // IPv6
     }
-	// Create address we're going to listen on (with given port number)
-	memset(&hints, 0, sizeof hints);
 	hints.ai_socktype = SOCK_STREAM; // TCP
 	hints.ai_flags = AI_PASSIVE;     // for bind, listen, accept
+
 	// node (NULL means any interface), service (port), hints, res. Note: argv[2] is the port_number
 	s = getaddrinfo(NULL, argv[2], &hints, &res);
 	if (s != 0) {
