@@ -8,7 +8,7 @@
 
 int main(int argc, char** argv) {
 	int sockfd, newsockfd, n, re, s;
-	char buffer[REQUEST_MAX_BUFFER_SIZE];
+	char buffer[REQUEST_MAX_BUFFER_SIZE + NULL_TERMINATOR_SPACE];
 	struct addrinfo hints, *res, *p;
 	struct sockaddr_storage client_addr;
 	socklen_t client_addr_size;
@@ -213,11 +213,15 @@ void send_http_response(int sockfd_to_send, char *file_path) {
 }
 
 bool parse_request_path(char *request_buffer, char **request_path) {
-    // Get the request line from the buffer.
-    char *request_line = strtok(request_buffer, "\r\n");
+    // Note: From https://man7.org/linux/man-pages/man3/strtok_r.3.html, if the delimiter isn't found, then strtok will
+    // scan forward until the null terminator byte, so it will return the whole string. This will then be caught
+    // by the checks below. This function should only accept requests which are in the form "GET path HTTP/1.0\r\n\r\n"
+    // and indicate an error in any other case.
 
     // If something has gone wrong with getting the request line, then we return false to indicate unsuccessful
-    // parsing of the request path as well.
+    // parsing of the request path as well. This also catches the case where a request is an empty string "" as
+    // strtok will give NULL back.
+    char *request_line = strtok(request_buffer, "\r\n");
     if(request_line == NULL) {
         return false;
     }
