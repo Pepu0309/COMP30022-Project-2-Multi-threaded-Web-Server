@@ -156,5 +156,13 @@ void *serve_connection(void *serve_connection_args) {
 
     free(serve_connection_args);
     close(newsockfd);
+
+    // pthread_create causes memory leaks. Call pthread_detach pthread_self (this thread) in order to automatically
+    // free the resources. Idea was initially seen at the stackoverflow post:
+    // https://stackoverflow.com/questions/5610677/valgrind-memory-leak-errors-when-using-pthread-create.
+    // Then, research into the linux manual was done to obtain full understanding of the context:
+    // https://man7.org/linux/man-pages/man3/pthread_detach.3.html and
+    // https://man7.org/linux/man-pages/man3/pthread_self.3.html
+    pthread_detach(pthread_self());
     return NULL;
 }
