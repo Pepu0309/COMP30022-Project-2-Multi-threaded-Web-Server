@@ -21,8 +21,12 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
+#define IMPLEMENTS_IPV6
+
 #define REQUEST_MAX_BUFFER_SIZE 2000
 #define INITIAL_STRING_SPACE 20
+#define IPV4_ARG "4"
+#define IPV6_ARG "6"
 
 #define NULL_TERMINATOR_SPACE 1
 #define ZERO_OFFSET 1

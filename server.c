@@ -18,9 +18,13 @@ int main(int argc, char** argv) {
 
     char *web_path_root = argv[3];
 
+    if(strcmp(argv[2], IPV4_ARG) == 0) {
+        hints.ai_family = AF_INET; // IPv4
+    } else if (strcmp(argv[2], IPV6_ARG) == 0) {
+        hints.ai_family = AF_INET6; // IPv6
+    }
 	// Create address we're going to listen on (with given port number)
 	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_INET;       // IPv4
 	hints.ai_socktype = SOCK_STREAM; // TCP
 	hints.ai_flags = AI_PASSIVE;     // for bind, listen, accept
 	// node (NULL means any interface), service (port), hints, res. Note: argv[2] is the port_number
@@ -126,11 +130,19 @@ void send_http_response(int sockfd_to_send, char *file_path) {
            stat struct file_stat declared earlier. */
         fstat(file_path_fd, &file_stat);
 
-        // Test that the file_path leads to a regular file and not something else like a directory.
+        // Test that the file_path leads to a regular file and not something else like a directory. The S_ISREG macro
+        // comes from the linux manual page, https://man7.org/linux/man-pages/man7/inode.7.html
         if(S_ISREG(file_stat.st_mode)) {
+            // Write to indicate a successful get response.
             write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n");
+
+            // Write the Content-Type header first without sending the actual MIME content type
             write_message(sockfd_to_send, "Content-Type: ");
+
+            // Then now call a helper function to write the MIME content type.
             write_content_type(sockfd_to_send, file_path);
+
+            // CRLF to terminate the Content-Type header line and then another CRLF to indicate the end of the headers.
             write_message(sockfd_to_send, "\r\n\r\n");
 
             off_t file_to_send_size = file_stat.st_size;
@@ -148,7 +160,7 @@ void send_http_response(int sockfd_to_send, char *file_path) {
                     total_num_bytes_sent += bytes_successfully_sent;
                 }
             }
-        // Otherwise, we send back a 404 not found response as well.
+        // Otherwise, we send back a 404 not found response as well if the file_path does not lead to a regular file. 
         } else {
             write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n");
         }
