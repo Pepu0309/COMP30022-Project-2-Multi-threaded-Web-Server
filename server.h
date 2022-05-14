@@ -47,9 +47,9 @@ void write_message(int socket, char *message);
 
 void send_http_response(int socket, char *file_path);
 
-char *parse_request_path(char *request_line);
+bool parse_request_path(char *request_buffer, char **request_path);
 
-void get_file_path(char **file_path, char *web_path_root, char *request_buffer);
+bool get_file_path(char **file_path, char *web_path_root, char *request_buffer);
 
 void write_content_type(int sockfd_to_send, char *file_path);
 

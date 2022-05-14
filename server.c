@@ -120,12 +120,12 @@ int main(int argc, char** argv) {
 
         char *file_path;
         // If the program successfully creates a file_path, then we continue as usual
-        if(get_file_path(&file_path, web_path_root, request_buffer)) {
+        if(get_file_path(&file_path, web_path_root, buffer)) {
             send_http_response(newsockfd, file_path);
             free(file_path);
-        // Otherwise, the program will send a generic 404 Not Found response
+        // Otherwise, the program will send a generic 404 Not Found response to the socket
         } else {
-            write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n");
+            write_message(newsockfd, "HTTP/1.0 404 Not Found\r\n\r\n");
         }
 
         close(newsockfd);
