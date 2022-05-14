@@ -128,21 +128,31 @@ int main(int argc, char** argv) {
 
 void *serve_connection(void *serve_connection_args) {
 
-    int n;
-    char buffer[REQUEST_MAX_BUFFER_SIZE + NULL_TERMINATOR_SPACE];
+    int n, bytes_read_so_far = 0;
+    // Use calloc to initialise the buffer so strstr can be called on it.
+    char *buffer = (char *) calloc ((REQUEST_MAX_BUFFER_SIZE + NULL_TERMINATOR_SPACE), sizeof(char));
 
     // Type cast the struct containing the arguments for the function and then extract them and store them in variables.
     int newsockfd = ((serve_connection_args_t *)serve_connection_args)->newsockfd;
     char *web_root_path = ((serve_connection_args_t *)serve_connection_args)->web_root_path;
 
-    // Read characters from the connection, then process
-    n = read(newsockfd, buffer, REQUEST_MAX_BUFFER_SIZE); // n is number of characters read
-    if (n < 0) {
-        perror("read");
-        exit(EXIT_FAILURE);
-    }
+    // Read characters from the connection, then process them until we encounter "\r\n\r\n" which we check using
+    // the strstr() function. "\r\n\r\n" means end of HTTP request.
+    do {
+        // Pass in buffer + bytes_read_so_far to read() which tells read the offset to begin reading at as per
+        // https://man7.org/linux/man-pages/man2/read.2.html. In the case of multi-packet request, read() will continue
+        // reading from where it left off at before.
+        n = read(newsockfd, buffer + bytes_read_so_far, REQUEST_MAX_BUFFER_SIZE); // n is number of characters read
+        if (n < 0) {
+            perror("read");
+            exit(EXIT_FAILURE);
+        }
+        // Track the bytes read so far into the buffer.
+        bytes_read_so_far += n;
+    } while(strstr(buffer, "\r\n\r\n") == NULL);
+
     // Null-terminate string
-    buffer[n] = '\0';
+    buffer[bytes_read_so_far] = '\0';
 
     char *file_path;
     // If the program successfully creates a file_path, then we continue as usual
@@ -155,6 +165,7 @@ void *serve_connection(void *serve_connection_args) {
     }
 
     free(serve_connection_args);
+    free(buffer);
     close(newsockfd);
 
     // pthread_create causes memory leaks. Call pthread_detach pthread_self (this thread) in order to automatically
