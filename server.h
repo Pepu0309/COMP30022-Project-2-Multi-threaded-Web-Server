@@ -14,6 +14,7 @@
 
 #include <stdbool.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "parse.h"
 #include "respond.h"
@@ -26,5 +27,13 @@
 
 #define NULL_TERMINATOR_SPACE 1
 #define ZERO_OFFSET 1
+
+typedef struct serve_connection_args serve_connection_args_t;
+struct serve_connection_args {
+    int newsockfd;
+    char *web_root_path;
+};
+
+void *serve_connection(void *serve_connection_args);
 
 #endif //COMP30023_2022_PROJECT_2_SERVER_H

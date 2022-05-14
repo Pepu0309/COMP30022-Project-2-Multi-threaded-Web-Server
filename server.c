@@ -7,18 +7,18 @@
 #include "server.h"
 
 int main(int argc, char** argv) {
-	int sockfd, newsockfd, n, re, s;
-	char buffer[REQUEST_MAX_BUFFER_SIZE + NULL_TERMINATOR_SPACE];
+	int sockfd, newsockfd, re, s;
 	struct addrinfo hints, *res, *p;
-	struct sockaddr_storage client_addr;
-	socklen_t client_addr_size;
+    struct sockaddr_storage client_addr;
+    socklen_t client_addr_size;
 
 	if (argc < 4) {
 		fprintf(stderr, "ERROR, no port provided\n");
 		exit(EXIT_FAILURE);
 	}
 
-    char *web_path_root = argv[3];
+    char *web_root_path = argv[3];
+
     bool mode_IPv6 = false;
 
 	// Create address we're going to listen on (with given port number)
@@ -103,35 +103,56 @@ int main(int argc, char** argv) {
         // Get back a new file descriptor to communicate on
         client_addr_size = sizeof client_addr;
         newsockfd =
-            accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
+                accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
         if (newsockfd < 0) {
             perror("accept");
             exit(EXIT_FAILURE);
         }
 
+        // Create a struct that contains the arguments needed to run the serve_connection function as per linux
+        // manual and Ed thread #845 https://edstem.org/au/courses/7916/discussion/857869.
+        serve_connection_args_t serve_connection_args;
+        serve_connection_args.newsockfd = newsockfd;
+        serve_connection_args.web_root_path = web_root_path;
 
-        // Read characters from the connection, then process
-        n = read(newsockfd, buffer, REQUEST_MAX_BUFFER_SIZE); // n is number of characters read
-        if (n < 0) {
-            perror("read");
-            exit(EXIT_FAILURE);
-        }
-        // Null-terminate string
-        buffer[n] = '\0';
+        // Create a pthread_t variable which is used to identify the thread.
+        // https://man7.org/linux/man-pages/man3/pthread_create.3.html
+        pthread_t thread_id;
 
-        char *file_path;
-        // If the program successfully creates a file_path, then we continue as usual
-        if(get_file_path(&file_path, web_path_root, buffer)) {
-            send_http_response(newsockfd, file_path);
-            free(file_path);
-        // Otherwise, the program will send a generic 404 Not Found response to the socket
-        } else {
-            write_message(newsockfd, "HTTP/1.0 404 Not Found\r\n\r\n");
-        }
-
-        close(newsockfd);
+        pthread_create(&thread_id, NULL, serve_connection, (void *)&serve_connection_args);
     }
     close(sockfd);
 	return 0;
 }
 
+void *serve_connection(void *serve_connection_args) {
+
+    int n;
+    char buffer[REQUEST_MAX_BUFFER_SIZE + NULL_TERMINATOR_SPACE];
+
+    // Type cast the struct containing the arguments for the function and then extract them and store them in variables.
+    int newsockfd = ((serve_connection_args_t *)serve_connection_args)->newsockfd;
+    char *web_root_path = ((serve_connection_args_t *)serve_connection_args)->web_root_path;
+
+    // Read characters from the connection, then process
+    n = read(newsockfd, buffer, REQUEST_MAX_BUFFER_SIZE); // n is number of characters read
+    if (n < 0) {
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
+    // Null-terminate string
+    buffer[n] = '\0';
+
+    char *file_path;
+    // If the program successfully creates a file_path, then we continue as usual
+    if(get_file_path(&file_path, web_root_path, buffer)) {
+        send_http_response(newsockfd, file_path);
+        free(file_path);
+        // Otherwise, the program will send a generic 404 Not Found response to the socket
+    } else {
+        write_message(newsockfd, "HTTP/1.0 404 Not Found\r\n\r\n");
+    }
+
+    close(newsockfd);
+    return NULL;
+}

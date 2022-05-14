@@ -1,5 +1,5 @@
 server: server.o parse.o respond.o
-	gcc -Wall -o server server.o -g parse.o respond.o
+	gcc -Wall -o server server.o -g parse.o respond.o -lpthread
 
 server.o:
 	gcc -Wall -o server.o -c server.c -g
