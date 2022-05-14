@@ -20,6 +20,7 @@
 #include "respond.h"
 
 #define IMPLEMENTS_IPV6
+#define MULTITHREADED
 
 #define REQUEST_MAX_BUFFER_SIZE 2000
 #define IPV4_ARG "4"
