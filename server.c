@@ -111,15 +111,16 @@ int main(int argc, char** argv) {
 
         // Create a struct that contains the arguments needed to run the serve_connection function as per linux
         // manual and Ed thread #845 https://edstem.org/au/courses/7916/discussion/857869.
-        serve_connection_args_t serve_connection_args;
-        serve_connection_args.newsockfd = newsockfd;
-        serve_connection_args.web_root_path = web_root_path;
+        serve_connection_args_t *serve_connection_args =
+                (serve_connection_args_t *)malloc(sizeof (serve_connection_args_t));
+        serve_connection_args->newsockfd = newsockfd;
+        serve_connection_args->web_root_path = web_root_path;
 
         // Create a pthread_t variable which is used to identify the thread.
         // https://man7.org/linux/man-pages/man3/pthread_create.3.html
         pthread_t thread_id;
 
-        pthread_create(&thread_id, NULL, serve_connection, (void *)&serve_connection_args);
+        pthread_create(&thread_id, NULL, serve_connection, (void *)serve_connection_args);
     }
     close(sockfd);
 	return 0;
@@ -154,5 +155,6 @@ void *serve_connection(void *serve_connection_args) {
     }
 
     close(newsockfd);
+    free(serve_connection_args);
     return NULL;
 }
