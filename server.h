@@ -37,6 +37,9 @@
 #define CSS_EXTENSION ".css"
 #define JAVA_SCRIPT_EXTENSION ".js"
 
+#define GET_REQUEST "GET"
+#define PROTOCOL_VER "HTTP/1.0"
+
 #define SUCCESS "200 OK"
 #define PAGE_NOT_FOUND "404 NOT FOUND"
 

@@ -119,12 +119,15 @@ int main(int argc, char** argv) {
         buffer[n] = '\0';
 
         char *file_path;
-        get_file_path(&file_path, web_path_root, buffer);
-        printf("%s", file_path);
+        // If the program successfully creates a file_path, then we continue as usual
+        if(get_file_path(&file_path, web_path_root, request_buffer)) {
+            send_http_response(newsockfd, file_path);
+            free(file_path);
+        // Otherwise, the program will send a generic 404 Not Found response
+        } else {
+            write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n");
+        }
 
-        send_http_response(newsockfd, file_path);
-
-        free(file_path);
         close(newsockfd);
     }
     close(sockfd);
@@ -209,35 +212,55 @@ void send_http_response(int sockfd_to_send, char *file_path) {
 
 }
 
-char *parse_request_path(char *request_buffer) {
+bool parse_request_path(char *request_buffer, char **request_path) {
     // Get the request line from the buffer.
     char *request_line = strtok(request_buffer, "\r\n");
 
-    // Consume the GET which is the first token of strtok
-    strtok(request_line, " ");
+    // Consume the GET which is the first token of strtok. If it's not GET then this function returns false
+    if(strcmp(strtok(request_line, " "), GET_REQUEST) != 0) {
+        return false;
+    }
 
     // Call strtok again using NULL as first argument to get the second token which is the file from the request and
     // return it.
-    return strtok(NULL, " ");
+    *request_path = strtok(NULL, " ");
+
+    // Call strtok once again to get the HTTP protocol version of the request. If it's not HTTP/1.0, then this
+    // function returns false as well.
+    if(strcmp(strtok(NULL, " "), PROTOCOL_VER) != 0) {
+        return false;
+    }
+
+    // Otherwise, at this point, everything is fine, so we return true
+    return true;
 }
 
-void get_file_path(char **file_path, char *web_path_root, char *request_buffer) {
-    char *request_path = parse_request_path(request_buffer);
-    size_t file_path_length = strlen(web_path_root) + strlen(request_path) + NULL_TERMINATOR_SPACE;
+bool get_file_path(char **file_path, char *web_path_root, char *request_buffer) {
+    char *request_path;
 
-    *file_path = (char *) malloc (file_path_length * sizeof(char));
+    // If nothing has gone wrong in parsing the request path, then we continue with creating the absolute file path.
+    if (parse_request_path(request_buffer, &request_path)) {
+        size_t file_path_length = strlen(web_path_root) + strlen(request_path) + NULL_TERMINATOR_SPACE;
 
-    /* Concatenate both the web_path_root and request_path into a new string variable. I was looking for a way
-       concatenate them into a new string variable with enough space instead of just concatenating request_path to
-       web_path_root and came across this code from a stackoverflow post.
-       https://stackoverflow.com/questions/8465006/how-do-i-concatenate-two-strings-in-c
-       and used it as reference. While the rest of the code is fairly similar, I wrote it before coming across the
-       post. */
+        *file_path = (char *) malloc (file_path_length * sizeof(char));
 
-    /* Copy web_path_root to file_path first since it has enough space to store both strings. */
-    strcpy(*file_path, web_path_root);
-    /* Then concatenate the request_path to file_path which should already contain web_path_root. */
-    strcat(*file_path, request_path);
+        /* Concatenate both the web_path_root and request_path into a new string variable. I was looking for a way
+           concatenate them into a new string variable with enough space instead of just concatenating request_path to
+           web_path_root and came across this code from a stackoverflow post.
+           https://stackoverflow.com/questions/8465006/how-do-i-concatenate-two-strings-in-c
+           and used it as reference. While the rest of the code is fairly similar, I wrote it before coming across the
+           post. */
+
+        /* Copy web_path_root to file_path first since it has enough space to store both strings. */
+        strcpy(*file_path, web_path_root);
+        /* Then concatenate the request_path to file_path which should already contain web_path_root. */
+        strcat(*file_path, request_path);
+        return true;
+    // If something has gone wrong, then we indicate that we were unable to successfully create an absolute file path.
+    } else {
+        return false;
+    }
+
 }
 
 void write_content_type(int sockfd_to_send, char *file_path) {
