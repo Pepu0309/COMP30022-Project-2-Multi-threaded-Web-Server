@@ -178,6 +178,17 @@ void send_http_response(int sockfd_to_send, char *file_path) {
             off_t total_num_bytes_sent = 0;
             off_t bytes_successfully_sent = 0;
 
+            // Benefits of sendfile(): sendfile() does it's copying from file to file in the kernel instead of the user
+            // space which is more efficient. User space operations such as read() and write() are I/O operations which
+            // require a system call as we were taught in the earlier weeks of the subject. Furthermore, as we were
+            // taught before (or explored during a tute with the tutor), doing a system call is quite expensive and
+            // hence why sendfile() is faster. This is reflected in the Linux manual page
+            // https://man7.org/linux/man-pages/man2/sendfile.2.html. Furthermore, in terms of code
+            // simplicity, there is no need to do separate calls to read one file and write the contents to the socket.
+            // There would also be no need to declare or size a buffer with consideration of the file and to
+            // concatenate the file contents to the buffer if the approach was to have everything in a buffer and
+            // write it all at once.
+
             // Track the bytes sent by sendfile() and make sure that all bytes are sent.
             while(total_num_bytes_sent < file_to_send_size) {
                 // sendfile returns -1 in the case of an error or the number of bytes successfully sent as per the
