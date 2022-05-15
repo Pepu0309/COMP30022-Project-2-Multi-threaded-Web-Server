@@ -11,6 +11,8 @@
 
 #define NULL_TERMINATOR_SPACE 1
 
+#define SAME_STRING 0
+
 #define GET_REQUEST "GET"
 #define PROTOCOL_VER "HTTP/1.0"
 

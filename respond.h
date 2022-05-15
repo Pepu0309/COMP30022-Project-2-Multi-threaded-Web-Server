@@ -25,6 +25,8 @@
 #define ZERO_OFFSET 1
 #define NULL_TERMINATOR_SPACE 1
 
+#define SAME_STRING 0
+
 void write_message(int socket, char *message);
 
 void send_http_response(int socket, char *file_path);

@@ -24,7 +24,7 @@ bool parse_request_path(char *request_buffer, char **request_path) {
     if(HTTP_method == NULL) {
         return false;
     }
-    if(strcmp(HTTP_method, GET_REQUEST) != 0) {
+    if(strcmp(HTTP_method, GET_REQUEST) != SAME_STRING) {
         return false;
     }
 
@@ -42,7 +42,7 @@ bool parse_request_path(char *request_buffer, char **request_path) {
     if(req_protocol_version == NULL) {
         return false;
     }
-    if(strcmp(req_protocol_version, PROTOCOL_VER) != 0) {
+    if(strcmp(req_protocol_version, PROTOCOL_VER) != SAME_STRING) {
         return false;
     }
 

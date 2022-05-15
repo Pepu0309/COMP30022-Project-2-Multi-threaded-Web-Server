@@ -92,13 +92,13 @@ void write_content_type(int sockfd_to_send, char *file_path) {
     if(extension != NULL) {
         // Among the four MIME content type the server identifies, if any of them are found, then return the MIME
         // content type as specified by https://mimetype.io/all-types/.
-        if(strcmp(extension, HTML_EXTENSION) == 0) {
+        if(strcmp(extension, HTML_EXTENSION) == SAME_STRING) {
             write_message(sockfd_to_send, "text/html");
-        } else if (strcmp(extension, JPEG_EXTENSION) == 0) {
+        } else if (strcmp(extension, JPEG_EXTENSION) == SAME_STRING) {
             write_message(sockfd_to_send, "image/jpeg");
-        } else if (strcmp(extension, JAVA_SCRIPT_EXTENSION) == 0) {
+        } else if (strcmp(extension, JAVA_SCRIPT_EXTENSION) == SAME_STRING) {
             write_message(sockfd_to_send, "text/javascript");
-        } else if (strcmp(extension, CSS_EXTENSION) == 0) {
+        } else if (strcmp(extension, CSS_EXTENSION) == SAME_STRING) {
             write_message(sockfd_to_send, "text/css");
             // If there is a '.' character found in the file path, but it's either a file extension not part of the four
             // or part of something else in the file path which is not a file extension (which we don't care about).
@@ -125,7 +125,7 @@ bool check_escape_file_path(char *file_path) {
         // addresses illegally.
         if(strlen(file_path) >= 3) {
             char *last_3_char = file_path + strlen(file_path) - 3;
-            if(strcmp(last_3_char, "/..") == 0) {
+            if(strcmp(last_3_char, "/..") == SAME_STRING) {
                 return true;
             }
         }

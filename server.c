@@ -24,9 +24,9 @@ int main(int argc, char** argv) {
 	// Create address we're going to listen on (with given port number)
 	memset(&hints, 0, sizeof hints);
 
-    if(strcmp(argv[1], IPV4_ARG) == 0) {
+    if(strcmp(argv[1], IPV4_ARG) == SAME_STRING) {
         hints.ai_family = AF_INET; // IPv4
-    } else if (strcmp(argv[1], IPV6_ARG) == 0) {
+    } else if (strcmp(argv[1], IPV6_ARG) == SAME_STRING) {
         hints.ai_family = AF_INET6; // IPv6
         // Set the mode_IPv6 flag to be true so the program knows that it's using IPv6.
         mode_IPv6 = true;
