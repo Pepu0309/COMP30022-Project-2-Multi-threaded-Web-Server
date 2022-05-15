@@ -116,9 +116,11 @@ int main(int argc, char** argv) {
     close(sockfd);
 	return 0;
 }
-
+// Function that is passed into pthread_create. This function takes a struct which contains the socket the thread
+// is supposed to serve as well as the web root path. It repeatedly reads packets from the socket and places it in a
+// buffer until the request ends. After reading the request, it then calls helper functions to send an appropriate
+// HTTP response.
 void *serve_connection(void *serve_connection_args) {
-
     int n, bytes_read_so_far = 0;
     // Use calloc to initialise the buffer so strstr can be called on it.
     char *buffer = (char *) calloc ((REQUEST_MAX_BUFFER_SIZE + NULL_TERMINATOR_SPACE), sizeof(char));
@@ -132,8 +134,8 @@ void *serve_connection(void *serve_connection_args) {
     do {
         // Pass in buffer + bytes_read_so_far to read() which tells read the offset to begin reading at as per
         // https://man7.org/linux/man-pages/man2/read.2.html. In the case of multi-packet request, read() will continue
-        // reading from where it left off at before.
-        n = read(newsockfd, buffer + bytes_read_so_far, REQUEST_MAX_BUFFER_SIZE - bytes_read_so_far); // n is number of characters read
+        // reading from where it left off at before. n is number of characters read
+        n = read(newsockfd, buffer + bytes_read_so_far, REQUEST_MAX_BUFFER_SIZE - bytes_read_so_far);
         if (n < 0) {
             perror("read");
             exit(EXIT_FAILURE);

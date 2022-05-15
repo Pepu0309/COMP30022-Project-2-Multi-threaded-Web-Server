@@ -29,6 +29,8 @@
 #define NULL_TERMINATOR_SPACE 1
 #define ZERO_OFFSET 1
 
+// A struct which contains the arguments needed for the serve_connection function. Used in conjunction with
+// pthread_create.
 typedef struct serve_connection_args serve_connection_args_t;
 struct serve_connection_args {
     int newsockfd;

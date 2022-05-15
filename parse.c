@@ -1,5 +1,8 @@
 #include "parse.h"
-
+// Takes the request buffer read in from serve_connection and a pointer to the request_path string and then extracts
+// the request_path and places it into the request_path string variable. Also does checks to make sure that the format
+// of the HTTP request is appropriate. Return true if all checks are passed, return false if there is an issue
+// with the request.
 bool parse_request_path(char *request_buffer, char **request_path) {
     // Note: From https://man7.org/linux/man-pages/man3/strtok_r.3.html, if the delimiter isn't found, then strtok will
     // scan forward until the null terminator byte, so it will return the whole string. This will then be caught
@@ -50,6 +53,9 @@ bool parse_request_path(char *request_buffer, char **request_path) {
     return true;
 }
 
+// Function which calls parse_request_path to obtain the request file path and then form the absolute file path
+// using the web root path passed in as a command line argument and the request file path. Returns true if no issues
+// are encountered when doing so; false otherwise.
 bool get_file_path(char **file_path, char *web_path_root, char *request_buffer) {
     char *request_path;
 

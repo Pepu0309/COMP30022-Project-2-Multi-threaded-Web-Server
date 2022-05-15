@@ -3,6 +3,8 @@
 //
 #include "respond.h"
 
+// A function which has an argument representing the socket to send a message to and the message. Calls syscall write()
+// to send the message to the socket.
 void write_message(int sockfd_to_send, char *message) {
     // Write message back
     int n = write(sockfd_to_send, message, strlen(message));
@@ -12,6 +14,9 @@ void write_message(int sockfd_to_send, char *message) {
     }
 }
 
+// Function which has an argument representing the socket to send the HTTP response back to as well as the file_path
+// derived from the incoming HTTP request. This function does several checks to determine that the file_path is
+// valid and then writes an appropriate HTTP response depending on the circumstances.
 void send_http_response(int sockfd_to_send, char *file_path) {
     int file_path_fd;
 
@@ -80,6 +85,7 @@ void send_http_response(int sockfd_to_send, char *file_path) {
 
 }
 
+// A function that is responsible for determining the content type and calling write_message to write it.
 void write_content_type(int sockfd_to_send, char *file_path) {
     char *extension;
 
@@ -111,8 +117,9 @@ void write_content_type(int sockfd_to_send, char *file_path) {
     }
 }
 
+// Function which checks whether there is an escape component within the file path. Returns true if there is; false
+// otherwise.
 bool check_escape_file_path(char *file_path) {
-
     // Check that the file path is not NULL. It shouldn't be by this point, but nothing wrong with checking again.
     if(file_path != NULL) {
         // Check if the file path contains "/../" at any point.
@@ -120,7 +127,7 @@ bool check_escape_file_path(char *file_path) {
             return true;
         }
         // Use pointer arithmetic on file_path to get the last 3 characters and check if it's "/.." which means that
-        // it's an escape character. Before that, also check that the length of the file path has more than 3
+        // it's an escape component. Before that, also check that the length of the file path has more than 3
         // characters (strlen does not count null terminator character '\0') so the program doesn't access memory
         // addresses illegally.
         if(strlen(file_path) >= 3) {
