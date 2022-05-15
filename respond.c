@@ -80,8 +80,6 @@ void send_http_response(int sockfd_to_send, char *file_path) {
 
 }
 
-
-
 void write_content_type(int sockfd_to_send, char *file_path) {
     char *extension;
 
