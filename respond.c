@@ -23,7 +23,6 @@ void send_http_response(int sockfd_to_send, char *file_path) {
     // stat struct from standard library which will allow access to the file size
     struct stat file_stat;
 
-    check_escape_file_path(file_path);
     // If the file we're trying to read from does not exist, open will return -1 as per the linux manual located at
     // https://man7.org/linux/man-pages/man2/open.2.html. Hence, if we cannot open what is located at the file path
     // or we find a "../" defined as the constant ESCAPE_PATH in the file_path, then we return a 404.
