@@ -121,7 +121,8 @@ void write_content_type(int sockfd_to_send, char *file_path) {
 bool check_escape_file_path(char *file_path) {
     // Check that the file path is not NULL. It shouldn't be by this point, but nothing wrong with checking again.
     if(file_path != NULL) {
-        // Check if the file path contains "/../" at any point.
+        // Check if the file path contains "/../" at any point. strstr() returns NULL when there is no occurrences
+        // of the specified substring in the string. https://man7.org/linux/man-pages/man3/strstr.3.html
         if(strstr(file_path, "/../") != NULL) {
             return true;
         }
