@@ -5,8 +5,6 @@
 
 void write_message(int sockfd_to_send, char *message) {
     // Write message back
-    // printf("Here is the message: %s\n", buffer);
-    printf("Writing message");
     int n = write(sockfd_to_send, message, strlen(message));
     if (n < 0) {
         perror("write");
@@ -87,8 +85,8 @@ void write_content_type(int sockfd_to_send, char *file_path) {
     char *extension;
 
     // Use strrchr to get the last occurrence of the FILE_EXTENSION_DELIMITER which is the '.' character. This deals
-    // with "false" extensions in the file_path. Handling '.' characters that are not associated with a file path when
-    // there is no extension is handled below.
+    // with "false" extensions in the file_path. Handling '.' characters that are not associated with an extension
+    // is handled below.
     extension = strrchr(file_path, FILE_EXTENSION_DELIMITER);
 
     // If there is a '.' character found in the file_path
@@ -114,3 +112,21 @@ void write_content_type(int sockfd_to_send, char *file_path) {
     }
 }
 
+//bool check_escape_file_path(char *file_path) {
+//
+//    // Check that the file path is not NULL. It shouldn't be by this point, but nothing wrong with checking again.
+//    if(file_path != NULL) {
+//        if(strstr(file_path, "/../") != NULL) {
+//            return true;
+//        }
+//
+//        bool last_2_chars = true;
+//        for(int i = strlen(file_path) - ZERO_OFFSET; i >= strlen(file_path) - ZERO_OFFSET - 2; i--) {
+//
+//            if(file_path[i])
+//        }
+//    }
+//
+//
+//
+//}

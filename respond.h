@@ -21,6 +21,8 @@
 #define CSS_EXTENSION ".css"
 #define JAVA_SCRIPT_EXTENSION ".js"
 
+#define ZERO_OFFSET 1
+
 void write_message(int socket, char *message);
 
 void send_http_response(int socket, char *file_path);

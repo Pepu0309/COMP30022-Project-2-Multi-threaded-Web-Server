@@ -142,7 +142,7 @@ void *serve_connection(void *serve_connection_args) {
         // Pass in buffer + bytes_read_so_far to read() which tells read the offset to begin reading at as per
         // https://man7.org/linux/man-pages/man2/read.2.html. In the case of multi-packet request, read() will continue
         // reading from where it left off at before.
-        n = read(newsockfd, buffer + bytes_read_so_far, REQUEST_MAX_BUFFER_SIZE); // n is number of characters read
+        n = read(newsockfd, buffer + bytes_read_so_far, REQUEST_MAX_BUFFER_SIZE - bytes_read_so_far); // n is number of characters read
         if (n < 0) {
             perror("read");
             exit(EXIT_FAILURE);
