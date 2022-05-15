@@ -40,27 +40,22 @@ int main(int argc, char** argv) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
 		exit(EXIT_FAILURE);
 	}
+
     // The code used in the if statement was referenced and modified from COMP30023 Week 8 Lecture 2 Lecture Slide 13
     // "Create IPv6 Socket". getaddrinfo returns multiple addresses in a linked list as mentioned in COMP30023
     // Week 8 Lecture 2. Hence, if we want a IPv6 address, we need to use a for loop to step through the
     // linked list returned (res) and find a valid IPv6 address to use to create a socket.
-    if(mode_IPv6) {
-        for(p = res; p != NULL; p = p->ai_next) {
-            // Check if the address family of the address is IPv6. If it is then we proceed to try to create a socket
-            // using this address in the linked list.
-            if(p->ai_family == AF_INET6) {
-                // We attempt to create a socket from this address. If socket creation was successful, we can use
-                // this socket, so we break out of the loop. Otherwise, we keep trying with remaining IPv6 addresses
-                // if there are any.
-                if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) >= 0) {
-                    break;
-                }
+    for (p = res; p != NULL; p = p->ai_next) {
+        // hints.ai_family contains the IP address type that we want (AF_INET or AF_INET6). Check that the current
+        // address in this node of the linked list corresponds to the address family stored in hints.ai_family.
+        if (p->ai_family == hints.ai_family) {
+            // We attempt to create a socket from this address. If socket creation was successful, we can use
+            // this socket, so we break out of the loop. Otherwise, we keep trying with remaining IPv6 addresses
+            // if there are any.
+            if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) >= 0) {
+                break;
             }
         }
-    // Otherwise, we don't care about IPv6 and create a socket as normal.
-    } else {
-        // Create socket
-        sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     }
 
     // If no sockets were successfully created either from the loop to create an IPv6 socket or the socket call() from
