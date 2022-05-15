@@ -20,9 +20,13 @@ bool parse_request_path(char *request_buffer, char **request_path) {
         return false;
     }
 
-    // Call strtok again using NULL as first argument to get the second token which is the file from the request and
-    // return it.
+    // Call strtok again using NULL as first argument to get the second token which is the supposed file path from the
+    // request and return it. If this is not a valid file path (like say this was the method or the protocol version
+    // instead), this issue will be caught by the checks later in the program.
     *request_path = strtok(NULL, " ");
+    if(*request_path == NULL) {
+        return false;
+    }
 
     // Call strtok once again to get the HTTP protocol version of the request. If it's not HTTP/1.0, then this
     // function returns false as well.

@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     socklen_t client_addr_size;
 
 	if (argc < 4) {
-		fprintf(stderr, "ERROR, no port provided\n");
+		fprintf(stderr, "ERROR, not enough arguments provided.\n");
 		exit(EXIT_FAILURE);
 	}
 

@@ -18,10 +18,11 @@ void send_http_response(int sockfd_to_send, char *file_path) {
     // stat struct from standard library which will allow access to the file size
     struct stat file_stat;
 
+    check_escape_file_path(file_path);
     // If the file we're trying to read from does not exist, open will return -1 as per the linux manual located at
     // https://man7.org/linux/man-pages/man2/open.2.html. Hence, if we cannot open what is located at the file path
     // or we find a "../" defined as the constant ESCAPE_PATH in the file_path, then we return a 404.
-    if((file_path_fd = open(file_path, O_RDONLY)) < 0 || strstr(file_path, "/../") != NULL) {
+    if((file_path_fd = open(file_path, O_RDONLY)) < 0 || check_escape_file_path(file_path)) {
         write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n");
         // Otherwise, the file exists, and we can use fstat to get the statistics of it.
     } else {
@@ -112,21 +113,24 @@ void write_content_type(int sockfd_to_send, char *file_path) {
     }
 }
 
-//bool check_escape_file_path(char *file_path) {
-//
-//    // Check that the file path is not NULL. It shouldn't be by this point, but nothing wrong with checking again.
-//    if(file_path != NULL) {
-//        if(strstr(file_path, "/../") != NULL) {
-//            return true;
-//        }
-//
-//        bool last_2_chars = true;
-//        for(int i = strlen(file_path) - ZERO_OFFSET; i >= strlen(file_path) - ZERO_OFFSET - 2; i--) {
-//
-//            if(file_path[i])
-//        }
-//    }
-//
-//
-//
-//}
+bool check_escape_file_path(char *file_path) {
+
+    // Check that the file path is not NULL. It shouldn't be by this point, but nothing wrong with checking again.
+    if(file_path != NULL) {
+        // Check if the file path contains "/../" at any point.
+        if(strstr(file_path, "/../") != NULL) {
+            return true;
+        }
+        // Use pointer arithmetic on file_path to get the last 3 characters and check if it's "/.." which means that
+        // it's an escape character. Before that, also check that the length of the file path has more than 3
+        // characters (strlen does not count null terminator character '\0') so the program doesn't access memory
+        // addresses illegally.
+        if(strlen(file_path) >= 3) {
+            char *last_3_char = file_path + strlen(file_path) - 3;
+            if(strcmp(last_3_char, "/..") == 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
