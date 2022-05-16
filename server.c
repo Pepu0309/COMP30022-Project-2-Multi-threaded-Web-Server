@@ -164,6 +164,7 @@ void *serve_connection(void *serve_connection_args) {
     char *file_path;
     // If the program successfully creates a file_path, then we continue as usual
     if(get_file_path(&file_path, web_root_path, buffer)) {
+        // Pass serve_connection_args in to free it in case an error occurs and the connection is dropped.
         send_http_response(newsockfd, file_path);
         free(file_path);
         // Otherwise, the program will send a generic 404 Not Found response to the socket
