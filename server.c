@@ -82,14 +82,14 @@ int main(int argc, char** argv) {
 	}
 	freeaddrinfo(res);
 
-    while(true) {
-        // Listen on socket - means we're ready to accept connections,
-        // incoming connection requests will be queued, man 3 listen
-        if (listen(sockfd, 5) < 0) {
-            perror("listen");
-            exit(EXIT_FAILURE);
-        }
+    // Listen on socket - means we're ready to accept connections,
+    // incoming connection requests will be queued, man 3 listen
+    if (listen(sockfd, 5) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
 
+    while(true) {
         // Accept a connection - blocks until a connection is ready to be accepted
         // Get back a new file descriptor to communicate on
         client_addr_size = sizeof client_addr;
