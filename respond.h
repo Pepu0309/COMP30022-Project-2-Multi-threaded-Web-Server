@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 #define FILE_EXTENSION_DELIMITER '.'
 #define HTML_EXTENSION ".html"

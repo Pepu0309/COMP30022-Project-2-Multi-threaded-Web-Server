@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
                 accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
         if (newsockfd < 0) {
             perror("accept");
-            exit(EXIT_FAILURE);
+            close(newsockfd);
         }
 
         // Create a struct that contains the arguments needed to run the serve_connection function as per linux
@@ -121,6 +121,15 @@ int main(int argc, char** argv) {
 // buffer until the request ends. After reading the request, it then calls helper functions to send an appropriate
 // HTTP response.
 void *serve_connection(void *serve_connection_args) {
+    // pthread_create causes memory leaks. Call pthread_detach pthread_self (this thread) in order to mark the thread
+    // automatically as detached which will automatically free the resources once it terminates. Idea was initially
+    // seen at the stackoverflow post:
+    // https://stackoverflow.com/questions/5610677/valgrind-memory-leak-errors-when-using-pthread-create.
+    // Then, research into the linux manual was done to obtain full understanding of the context:
+    // https://man7.org/linux/man-pages/man3/pthread_detach.3.html and
+    // https://man7.org/linux/man-pages/man3/pthread_self.3.html
+    pthread_detach(pthread_self());
+
     int n, bytes_read_so_far = 0;
     // Use calloc to initialise the buffer so strstr can be called on it.
     char *buffer = (char *) calloc ((REQUEST_MAX_BUFFER_SIZE + NULL_TERMINATOR_SPACE), sizeof(char));
@@ -136,9 +145,14 @@ void *serve_connection(void *serve_connection_args) {
         // https://man7.org/linux/man-pages/man2/read.2.html. In the case of multi-packet request, read() will continue
         // reading from where it left off at before. n is number of characters read
         n = read(newsockfd, buffer + bytes_read_so_far, REQUEST_MAX_BUFFER_SIZE - bytes_read_so_far);
+        // If there is a read error, free everything and drop the connection by closing the socket.
         if (n < 0) {
             perror("read");
-            exit(EXIT_FAILURE);
+            // Since we can free everything here and just return and the thread will terminate, just do that instead.
+            free(serve_connection_args);
+            free(buffer);
+            close(newsockfd);
+            return NULL;
         }
         // Track the bytes read so far into the buffer.
         bytes_read_so_far += n;
@@ -157,16 +171,9 @@ void *serve_connection(void *serve_connection_args) {
         write_message(newsockfd, "HTTP/1.0 404 Not Found\r\n\r\n");
     }
 
+    // Thread terminates normally.
     free(serve_connection_args);
     free(buffer);
     close(newsockfd);
-
-    // pthread_create causes memory leaks. Call pthread_detach pthread_self (this thread) in order to automatically
-    // free the resources. Idea was initially seen at the stackoverflow post:
-    // https://stackoverflow.com/questions/5610677/valgrind-memory-leak-errors-when-using-pthread-create.
-    // Then, research into the linux manual was done to obtain full understanding of the context:
-    // https://man7.org/linux/man-pages/man3/pthread_detach.3.html and
-    // https://man7.org/linux/man-pages/man3/pthread_self.3.html
-    pthread_detach(pthread_self());
     return NULL;
 }

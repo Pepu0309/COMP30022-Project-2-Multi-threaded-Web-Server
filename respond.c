@@ -5,12 +5,13 @@
 
 // A function which has an argument representing the socket to send a message to and the message. Calls syscall write()
 // to send the message to the socket.
-void write_message(int sockfd_to_send, char *message) {
+bool write_message(int sockfd_to_send, char *message) {
     // Write message back
     int n = write(sockfd_to_send, message, strlen(message));
     if (n < 0) {
         perror("write");
-        exit(EXIT_FAILURE);
+        close(sockfd_to_send);
+        pthread_exit();
     }
 }
 
@@ -73,6 +74,9 @@ void send_http_response(int sockfd_to_send, char *file_path) {
                 // If there was no error, then we increment the total number of bytes sent.
                 if(bytes_successfully_sent >= 0) {
                     total_num_bytes_sent += bytes_successfully_sent;
+                } else if (bytes_successfully_sent < 0) {
+                    close(sockfd_to_send);
+                    pthread_exit();
                 }
             }
             // Otherwise, we send back a 404 not found response as well if the file_path does not lead to a regular file.
