@@ -28,11 +28,11 @@
 
 #define SAME_STRING 0
 
-bool write_message(int socket, char *message);
+void write_message(int sockfd_to_send, char *message, void *serve_connection_args);
 
-void send_http_response(int socket, char *file_path);
+void send_http_response(int sockfd_to_send, char *file_path, void *serve_connection_args);
 
-bool write_content_type(int sockfd_to_send, char *file_path);
+void write_content_type(int sockfd_to_send, char *file_path, void *serve_connection_args);
 
 bool check_escape_file_path(char *file_path);
 
