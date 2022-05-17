@@ -20,7 +20,9 @@ bool write_message(int sockfd_to_send, char *message) {
 
 // Function which has an argument representing the socket to send the HTTP response back to as well as the file_path
 // derived from the incoming HTTP request. This function does several checks to determine that the file_path is
-// valid and then writes an appropriate HTTP response depending on the circumstances.
+// valid and then writes an appropriate HTTP response depending on the circumstances. If a write error occurs or a
+// sendfile error occurs, this function will immediately exit by returning and have serve_connection close the socket
+// and free the memory as usual.
 void send_http_response(int sockfd_to_send, char *file_path) {
     int file_path_fd;
 
@@ -101,7 +103,8 @@ void send_http_response(int sockfd_to_send, char *file_path) {
 
 }
 
-// A function that is responsible for determining the content type and calling write_message to write it.
+// A function that is responsible for determining the content type and calling write_message to write it. If at any
+// point a write error occurs, then the function propagates the write error up the call stack to send_http_response.
 bool write_content_type(int sockfd_to_send, char *file_path) {
     char *extension;
 
@@ -131,14 +134,14 @@ bool write_content_type(int sockfd_to_send, char *file_path) {
                 return WRITE_ERROR;
             }
         // If there is a '.' character found in the file path, but it's either a file extension not part of
-        // the four or part of something else in the file path which is not a
-        // file extension (which we don't care about).
+        // the four or part of something else in the file path which is not
+        // a file extension (which we don't care about).
         } else {
             if(write_message(sockfd_to_send, "application/octet-stream") == WRITE_ERROR) {
                 return WRITE_ERROR;
             }
         }
-        // If there is no '.' character found which means no file extension.
+    // If there is no '.' character found which means no file extension.
     } else {
         if(write_message(sockfd_to_send, "application/octet-stream") == WRITE_ERROR) {
             return WRITE_ERROR;

@@ -176,7 +176,7 @@ void *serve_connection(void *serve_connection_args) {
         write_message(newsockfd, "HTTP/1.0 404 Not Found\r\n\r\n");
     }
 
-    // Thread terminates.
+    // Close the connection, free everything and thread terminates.
     close(newsockfd);
     free(serve_connection_args);
     free(buffer);
