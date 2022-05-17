@@ -107,7 +107,6 @@ int main(int argc, char** argv) {
 
         pthread_create(&thread_id, NULL, serve_connection, (void *)serve_connection_args);
     }
-    close(sockfd);
 	return 0;
 }
 // Function that is passed into pthread_create. This function takes a struct which contains the socket the thread
