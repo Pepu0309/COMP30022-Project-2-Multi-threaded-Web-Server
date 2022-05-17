@@ -164,22 +164,21 @@ void *serve_connection(void *serve_connection_args) {
     char *file_path;
     // If the program successfully creates a file_path, then we continue as usual
     if(get_file_path(&file_path, web_root_path, buffer)) {
-        // Free buffer since we don't need it anymore. strcpy copies what we need from buffer to file_path already.
-        // Freeing here in case there is an error that occurs with send_http_response which would trigger
-        // termination of the thread.
-        free(buffer);
-        // Pass serve_connection_args in to free it in case an error occurs and the connection is dropped.
-        send_http_response(newsockfd, file_path, serve_connection_args);
+        // This function may terminate (return) early if there is an error with write() or sendfile() that occurs
+        // which prompts the server to drop the connection. In those cases, the thread will simply move on to free
+        // all the memory used and close the socket before terminating.
+        send_http_response(newsockfd, file_path);
         free(file_path);
         // Otherwise, the program will send a generic 404 Not Found response to the socket
     } else {
-        // Buffer is freed here as well in case the thread terminates as a result of a write() fail.
-        free(buffer);
-        write_message(newsockfd, "HTTP/1.0 404 Not Found\r\n\r\n", serve_connection_args);
+        // If the write function fails here, then the thread will still just drop the connection and free memory as
+        // usual, so no need to check whether it's successful or not.
+        write_message(newsockfd, "HTTP/1.0 404 Not Found\r\n\r\n");
     }
 
-    // Thread terminates normally.
-    free(serve_connection_args);
+    // Thread terminates.
     close(newsockfd);
+    free(serve_connection_args);
+    free(buffer);
     return NULL;
 }

@@ -26,13 +26,16 @@
 #define ZERO_OFFSET 1
 #define NULL_TERMINATOR_SPACE 1
 
+#define WRITE_ERROR 0
+#define WRITE_SUCCESSFUL 1
+
 #define SAME_STRING 0
 
-void write_message(int sockfd_to_send, char *message, void *serve_connection_args);
+bool write_message(int sockfd_to_send, char *message);
 
-void send_http_response(int sockfd_to_send, char *file_path, void *serve_connection_args);
+void send_http_response(int sockfd_to_send, char *file_path);
 
-void write_content_type(int sockfd_to_send, char *file_path, void *serve_connection_args);
+bool write_content_type(int sockfd_to_send, char *file_path);
 
 bool check_escape_file_path(char *file_path);
 

@@ -5,22 +5,23 @@
 
 // A function which has an argument representing the socket to send a message to and the message. Calls syscall write()
 // to send the message to the socket. Returns false in the case of an error; returns true otherwise.
-// The if(!write_message()...) used across functions in this module is true if an error occurred in write_message.
-void write_message(int sockfd_to_send, char *message, void *serve_connection_args) {
+// The if(write_message() == WRITE_ERROR) statement is used across functions in this module to check if an error
+// occurred in write_message. In which case, the thread returns immediately back up to the serve_connection() function
+// which will then close the socket (drop the connection), free all memory and terminate itself.
+bool write_message(int sockfd_to_send, char *message) {
     // Write message back
     int n = write(sockfd_to_send, message, strlen(message));
     if (n < 0) {
         perror("write");
-        close(sockfd_to_send);
-        free(serve_connection_args);
-        pthread_exit(NULL);
+        return WRITE_ERROR;
     }
+    return WRITE_SUCCESSFUL;
 }
 
 // Function which has an argument representing the socket to send the HTTP response back to as well as the file_path
 // derived from the incoming HTTP request. This function does several checks to determine that the file_path is
 // valid and then writes an appropriate HTTP response depending on the circumstances.
-void send_http_response(int sockfd_to_send, char *file_path, void *serve_connection_args) {
+void send_http_response(int sockfd_to_send, char *file_path) {
     int file_path_fd;
 
     // stat struct from standard library which will allow access to the file size
@@ -30,7 +31,9 @@ void send_http_response(int sockfd_to_send, char *file_path, void *serve_connect
     // https://man7.org/linux/man-pages/man2/open.2.html. Hence, if we cannot open what is located at the file path
     // or we find a "../" defined as the constant ESCAPE_PATH in the file_path, then we return a 404.
     if((file_path_fd = open(file_path, O_RDONLY)) < 0 || check_escape_file_path(file_path)) {
-        write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n", serve_connection_args);
+        if(write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n") == WRITE_ERROR) {
+            return;
+        }
         // Otherwise, the file exists, and we can use fstat to get the statistics of it.
     } else {
         /* Call fstat on file_path to get the statistics of the file located at file_path and then store it in the
@@ -41,15 +44,23 @@ void send_http_response(int sockfd_to_send, char *file_path, void *serve_connect
         // comes from the linux manual page, https://man7.org/linux/man-pages/man7/inode.7.html
         if(S_ISREG(file_stat.st_mode)) {
             // Write to indicate a successful get response.
-            write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n", serve_connection_args);
+            if(write_message(sockfd_to_send, "HTTP/1.0 200 OK\r\n") == WRITE_ERROR) {
+                return;
+            }
 
             // Write the Content-Type header first without sending the actual MIME content type
-            write_message(sockfd_to_send, "Content-Type: ", serve_connection_args);
+            if(write_message(sockfd_to_send, "Content-Type: ") == WRITE_ERROR) {
+                return;
+            }
 
-            write_content_type(sockfd_to_send, file_path, serve_connection_args);
+            if(write_content_type(sockfd_to_send, file_path) == WRITE_ERROR) {
+                return;
+            }
 
             // CRLF to terminate the Content-Type header line and then another CRLF to indicate the end of the headers.
-            write_message(sockfd_to_send, "\r\n\r\n", serve_connection_args);
+            if(write_message(sockfd_to_send, "\r\n\r\n") == WRITE_ERROR) {
+                return;
+            }
 
             off_t file_to_send_size = file_stat.st_size;
             off_t total_num_bytes_sent = 0;
@@ -61,8 +72,8 @@ void send_http_response(int sockfd_to_send, char *file_path, void *serve_connect
             // taught before (or explored during a tute with the tutor), doing a system call is quite expensive and
             // hence why sendfile() is faster. This is reflected in the Linux manual page
             // https://man7.org/linux/man-pages/man2/sendfile.2.html. Furthermore, in terms of code
-            // simplicity, there is no need to do separate calls to read one file and write the contents to the socket.
-            // There would also be no need to declare or size a buffer with consideration of the file and to
+            // simplicity, there is no need to do separate calls to read the file and write the contents to the socket.
+            // There would also be no need to declare or size a buffer with consideration of the file size and to
             // concatenate the file contents to the buffer if the approach was to have everything in a buffer and
             // write it all at once.
 
@@ -76,14 +87,14 @@ void send_http_response(int sockfd_to_send, char *file_path, void *serve_connect
                 if(bytes_successfully_sent >= 0) {
                     total_num_bytes_sent += bytes_successfully_sent;
                 } else if (bytes_successfully_sent < 0) {
-                    close(sockfd_to_send);
-                    free(serve_connection_args);
-                    pthread_exit(NULL);
+                    return;
                 }
             }
-            // Otherwise, we send back a 404 not found response as well if the file_path does not lead to a regular file.
+        // Otherwise, we send back a 404 not found response as well if the file_path does not lead to a regular file.
         } else {
-            write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n", serve_connection_args);
+            if(write_message(sockfd_to_send, "HTTP/1.0 404 Not Found\r\n\r\n") == WRITE_ERROR) {
+                return;
+            }
         }
 
     }
@@ -91,9 +102,7 @@ void send_http_response(int sockfd_to_send, char *file_path, void *serve_connect
 }
 
 // A function that is responsible for determining the content type and calling write_message to write it.
-// Returns false if an error has occurred; returns true otherwise.
-void write_content_type(int sockfd_to_send, char *file_path, void *serve_connection_args) {
-    // Then now call a helper function to write the MIME content type.
+bool write_content_type(int sockfd_to_send, char *file_path) {
     char *extension;
 
     // Use strrchr to get the last occurrence of the FILE_EXTENSION_DELIMITER which is the '.' character. This deals
@@ -106,23 +115,36 @@ void write_content_type(int sockfd_to_send, char *file_path, void *serve_connect
         // Among the four MIME content type the server identifies, if any of them are found, then return the MIME
         // content type as specified by https://mimetype.io/all-types/.
         if(strcmp(extension, HTML_EXTENSION) == SAME_STRING) {
-            write_message(sockfd_to_send, "text/html", serve_connection_args);
+            if(write_message(sockfd_to_send, "text/html") == WRITE_ERROR) {
+                return WRITE_ERROR;
+            }
         } else if (strcmp(extension, JPEG_EXTENSION) == SAME_STRING) {
-            write_message(sockfd_to_send, "image/jpeg", serve_connection_args);
+            if(write_message(sockfd_to_send, "image/jpeg") == WRITE_ERROR) {
+                return WRITE_ERROR;
+            }
         } else if (strcmp(extension, JAVA_SCRIPT_EXTENSION) == SAME_STRING) {
-            write_message(sockfd_to_send, "text/javascript", serve_connection_args);
+            if(write_message(sockfd_to_send, "text/javascript") == WRITE_ERROR) {
+                return WRITE_ERROR;
+            }
         } else if (strcmp(extension, CSS_EXTENSION) == SAME_STRING) {
-            write_message(sockfd_to_send, "text/css", serve_connection_args);
-            // If there is a '.' character found in the file path, but it's either a file extension not part of
-            // the four or part of something else in the file path which is not a
-            // file extension (which we don't care about).
+            if(write_message(sockfd_to_send, "text/css") == WRITE_ERROR) {
+                return WRITE_ERROR;
+            }
+        // If there is a '.' character found in the file path, but it's either a file extension not part of
+        // the four or part of something else in the file path which is not a
+        // file extension (which we don't care about).
         } else {
-            write_message(sockfd_to_send, "application/octet-stream", serve_connection_args);
+            if(write_message(sockfd_to_send, "application/octet-stream") == WRITE_ERROR) {
+                return WRITE_ERROR;
+            }
         }
         // If there is no '.' character found which means no file extension.
     } else {
-        write_message(sockfd_to_send, "application/octet-stream", serve_connection_args);
+        if(write_message(sockfd_to_send, "application/octet-stream") == WRITE_ERROR) {
+            return WRITE_ERROR;
+        }
     }
+    return WRITE_SUCCESSFUL;
 }
 
 // Function which checks whether there is an escape component within the file path. Returns true if there is; false
