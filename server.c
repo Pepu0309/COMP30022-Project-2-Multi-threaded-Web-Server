@@ -3,11 +3,12 @@
 // To compile: gcc server.c -o server
 // Reference: Beej's networking guide, man pages
 
-// The code in this project was built off of server.c provided as part of COMP30023 Week 9 Practical.
+// The code in this project was built off of server.c provided as part of COMP30023 Week 9 Practical which can be
+// found at https://gitlab.eng.unimelb.edu.au/comp30023-2022-projects/practicals/-/blob/main/week9-sockets/server.c.
 #include "server.h"
 
 int main(int argc, char** argv) {
-	int sockfd, newsockfd, re, s;
+	int sockfd, newsockfd, s;
 	struct addrinfo hints, *res, *p;
     struct sockaddr_storage client_addr;
     socklen_t client_addr_size;
@@ -60,18 +61,12 @@ int main(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
 
-
-	// Reuse port if possible
-	re = 1;
-	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &re, sizeof(int)) < 0) {
-		perror("setsockopt");
-		exit(EXIT_FAILURE);
-	}
-
+	// Reuse port if possible. This piece of code was provided in COMP30023 Project 2 Spec. Similar code was included
+    // in server.c from COMP30023 Week 9 Practicals but was replaced with this.
     int enable = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
         perror("setsockopt");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // Bind address to the socket
