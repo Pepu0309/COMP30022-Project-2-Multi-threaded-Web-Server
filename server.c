@@ -46,16 +46,15 @@ int main(int argc, char** argv) {
         // address in this node of the linked list corresponds to the address family stored in hints.ai_family.
         if (p->ai_family == hints.ai_family) {
             // We attempt to create a socket from this address. If socket creation was successful, we can use
-            // this socket, so we break out of the loop. Otherwise, we keep trying with remaining IPv6 addresses
-            // if there are any.
+            // this socket, so we break out of the loop. Otherwise, we keep trying with remaining addresses until
+            // we run out.
             if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) >= 0) {
                 break;
             }
         }
     }
 
-    // If no sockets were successfully created either from the loop to create an IPv6 socket or the socket call() from
-    // the else statement to create a normal IPv4 socket, then there was an error and the program exits with failure.
+    // If no sockets were successfully created (either IPv6 or IPv4)
     if (sockfd < 0) {
         perror("socket");
         exit(EXIT_FAILURE);
