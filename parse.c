@@ -49,6 +49,13 @@ bool parse_request_path(char *request_buffer, char **request_path) {
         return false;
     }
 
+    // At this point, we know that the protocol version field is not empty, and so we can safely call another strtok_r
+    // to check that there's nothing after the protocol version "HTTP/1.0" before the CRLF newline (strtok_r returns
+    // NULL). If there is something present, this would constitute a malformed GET request.
+    if(strtok_r(NULL, " ", &request_line_saveptr) != NULL) {
+        return false;
+    }
+
     // Otherwise, at this point, everything is fine, so we return true
     return true;
 }
