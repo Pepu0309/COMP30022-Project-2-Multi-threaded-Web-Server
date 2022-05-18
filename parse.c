@@ -21,6 +21,7 @@ bool parse_request_path(char *request_buffer, char **request_path) {
     if(request_line == NULL) {
         return false;
     }
+    size_t request_line_size = strlen(request_line);
 
     // Consume the GET which is the first token of strtok_r. If it's not GET then this function returns false.
     char *HTTP_method = strtok_r(request_line, " ", &request_line_saveptr);
@@ -49,10 +50,16 @@ bool parse_request_path(char *request_buffer, char **request_path) {
         return false;
     }
 
-    // At this point, we know that the protocol version field is not empty, and so we can safely call another strtok_r
-    // to check that there's nothing after the protocol version "HTTP/1.0" before the CRLF newline (strtok_r returns
-    // NULL). If there is something present, this would constitute a malformed GET request.
-    if(strtok_r(NULL, " ", &request_line_saveptr) != NULL) {
+    // At this point, we know that the protocol version field is not empty, but we have to make sure that nothing else
+    // comes between the protocol version "HTTP/1.0" and "\r\n", the "\r\n" character was stripped away by the first
+    // strtok_r in order to get the request line. Call strlen on all the 3 tokens and add 2 more spaces
+    // (to count the space delimiters that were disposed of) and compare that to the strlen of request_line saved at
+    // the start. If the combined string length of the tokens is less than that of the request line,
+    // that means there was something between the protocol version and "\r\n" and the request is invalid.
+    size_t combined_token_size = strlen(HTTP_method) + strlen(*request_path) +
+            strlen(req_protocol_version) + TWO_SPACES;
+
+    if(combined_token_size < request_line_size) {
         return false;
     }
 

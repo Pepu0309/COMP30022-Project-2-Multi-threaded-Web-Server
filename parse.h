@@ -10,6 +10,7 @@
 #include <stdbool.h>
 
 #define NULL_TERMINATOR_SPACE 1
+#define TWO_SPACES 2
 
 #define SAME_STRING 0
 
