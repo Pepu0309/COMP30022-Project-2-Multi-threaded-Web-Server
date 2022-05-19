@@ -105,17 +105,17 @@ bool get_file_path(char **file_path, char *web_path_root, char *request_buffer) 
     }
 }
 
-// Function which checks whether there is an escape component within the file path. Returns true if there is; false
+// Function which checks whether there is an escape component within the request path. Returns true if there is; false
 // otherwise.
 bool check_escape_request_path(char *request_path) {
-    // Check that the file path is not NULL. It shouldn't be by this point, but nothing wrong with checking again.
+    // Check that the request path is not NULL. It shouldn't be by this point, but nothing wrong with checking again.
     if(request_path != NULL) {
-        // Check if the file path contains "/../" at any point. strstr() returns NULL when there is no occurrences
+        // Check if the request path contains "/../" at any point. strstr() returns NULL when there is no occurrences
         // of the specified substring in the string. https://man7.org/linux/man-pages/man3/strstr.3.html
         if(strstr(request_path, "/../") != NULL) {
             return true;
         }
-        // Use pointer arithmetic on file_path to get the last 3 characters and check if it's "/.." which means that
+        // Use pointer arithmetic on request_path to get the last 3 characters and check if it's "/.." which means that
         // it's an escape component. Before that, also check that the length of the file path has more than 3
         // characters (strlen does not count null terminator character '\0') so the program doesn't access memory
         // addresses illegally.
