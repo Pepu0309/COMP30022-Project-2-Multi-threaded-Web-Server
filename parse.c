@@ -79,7 +79,7 @@ bool get_file_path(char **file_path, char *web_path_root, char *request_buffer) 
         if(check_escape_request_path(request_path)) {
             return false;
         }
-        // Nothing is wrong with the request_path.
+        // Nothing is wrong with the request_path, proceed with forming the full file path.
         size_t file_path_length = strlen(web_path_root) + strlen(request_path) + NULL_TERMINATOR_SPACE;
 
         *file_path = (char *) malloc (file_path_length * sizeof(char));
