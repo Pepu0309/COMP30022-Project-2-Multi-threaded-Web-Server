@@ -73,8 +73,13 @@ bool parse_request_path(char *request_buffer, char **request_path) {
 bool get_file_path(char **file_path, char *web_path_root, char *request_buffer) {
     char *request_path;
 
-    // If nothing has gone wrong in parsing the request path, then we continue with creating the absolute file path.
+    // If nothing has gone wrong in parsing the request path, then also check that the request_path does not contain
+    // any escape components before creating the full file path.
     if (parse_request_path(request_buffer, &request_path) && web_path_root != NULL) {
+        if(check_escape_request_path(request_path)) {
+            return false;
+        }
+        // Nothing is wrong with the request_path.
         size_t file_path_length = strlen(web_path_root) + strlen(request_path) + NULL_TERMINATOR_SPACE;
 
         *file_path = (char *) malloc (file_path_length * sizeof(char));
@@ -93,10 +98,34 @@ bool get_file_path(char **file_path, char *web_path_root, char *request_buffer) 
         //Then concatenate the request_path to file_path which should already contain web_path_root.
         strcat(*file_path, request_path);
         return true;
-        // If something has gone wrong, then we indicate that we were unable to successfully create an
-        // absolute file path.
+    // If something has gone wrong, then we indicate that we were unable to successfully create an
+    // absolute file path.
     } else {
         return false;
     }
+}
+
+// Function which checks whether there is an escape component within the file path. Returns true if there is; false
+// otherwise.
+bool check_escape_request_path(char *request_path) {
+    // Check that the file path is not NULL. It shouldn't be by this point, but nothing wrong with checking again.
+    if(request_path != NULL) {
+        // Check if the file path contains "/../" at any point. strstr() returns NULL when there is no occurrences
+        // of the specified substring in the string. https://man7.org/linux/man-pages/man3/strstr.3.html
+        if(strstr(request_path, "/../") != NULL) {
+            return true;
+        }
+        // Use pointer arithmetic on file_path to get the last 3 characters and check if it's "/.." which means that
+        // it's an escape component. Before that, also check that the length of the file path has more than 3
+        // characters (strlen does not count null terminator character '\0') so the program doesn't access memory
+        // addresses illegally.
+        if(strlen(request_path) >= 3) {
+            char *last_3_char = request_path + strlen(request_path) - 3;
+            if(strcmp(last_3_char, "/..") == SAME_STRING) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 

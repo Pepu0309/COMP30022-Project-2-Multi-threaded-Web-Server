@@ -37,6 +37,4 @@ void send_http_response(int sockfd_to_send, char *file_path);
 
 bool write_content_type(int sockfd_to_send, char *file_path);
 
-bool check_escape_file_path(char *file_path);
-
 #endif //COMP30023_2022_PROJECT_2_RESPOND_H

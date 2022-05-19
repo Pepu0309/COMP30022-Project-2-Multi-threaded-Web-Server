@@ -21,4 +21,6 @@ bool parse_request_path(char *request_buffer, char **request_path);
 
 bool get_file_path(char **file_path, char *web_path_root, char *request_buffer);
 
+bool check_escape_request_path(char *request_path);
+
 #endif //COMP30023_2022_PROJECT_2_PARSE_H
